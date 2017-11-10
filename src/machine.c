@@ -48,6 +48,7 @@ struct vm_t* initialize_machine()
 
 void shutdown_machine(struct vm_t* machine)
 {
+    dbgPrintf("Shutting down VM.\n");
     free(machine->cpu);
     free(machine->mem->memory);
     free(machine->mem);

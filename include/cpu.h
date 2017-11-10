@@ -2,6 +2,7 @@
 #define __CPU__
 
 #include <stdint.h>
+#include "opcode.h"
 
 /* Special registers define */
 #define CPU_REGISTER_SP 15  /* Stack pointer */
