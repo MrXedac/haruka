@@ -2,6 +2,9 @@
 #define __OPCODE__
 
 #include <stdint.h>
+#include "machine.h"
+
+struct vm_t;
 
 /* CPU instruction set and opcodes */
 
@@ -12,20 +15,25 @@ struct instr_t {
 
 #define IS_SIZE         6       /* Instruction set size */
 
+#define OPCODE(x)	void handle_##x(struct vm_t *vm)
+#define OP(x)		handle_##x
+
 #define OPCODE_NOP      0x00
 #define OPCODE_MOV      0x01
-#define OPCODE_ADD      0x02
-#define OPCODE_SUB      0x03
+#define OPCODE_INC      0x02
+#define OPCODE_DEC      0x03
 #define OPCODE_JMP      0x04
 #define OPCODE_CALL     0x05
 
-static const uint8_t opcode_length[IS_SIZE] = {
-    0,      /* NOP */
-    2,      /* MOV REG, IMM */
-    1,      /* ADD REG */
-    1,      /* SUB REG */
-    1,      /* JMP REG */
-    1,      /* CALL REG */
-};
+OPCODE(NOP);
+OPCODE(MOV);
+OPCODE(INC);
+OPCODE(DEC);
+OPCODE(JMP);
+OPCODE(CALL);
+
+typedef void (*opcode_handler)(struct vm_t *vm);
+
+void execute(struct vm_t *vm);
 
 #endif

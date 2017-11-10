@@ -3,6 +3,7 @@
 
 #include "debug.h"
 #include "machine.h"
+#include "bios.h"
 
 int main(int argc, char** argv)
 {
@@ -11,7 +12,9 @@ int main(int argc, char** argv)
     if(vm)
     {
         dbgPrintf("VM initialized successfully.\n");
-        shutdown_machine(vm);
+	load_bios(vm);
+	execute(vm);
+	shutdown_machine(vm);
         return 0;
     } else {
         dbgPrintf("Couldn't initialize VM properly. Exiting.\n");

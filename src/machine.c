@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "machine.h"
 #include "cpu.h"
@@ -23,6 +24,12 @@ struct vm_t* initialize_machine()
         free(machine);
         return NULL;
     }
+    /* BSP / Boot processor */
+    machine->cpu->cpuid = 0;
+    for(uint8_t i = 0; i < 16; i++)
+	    machine->cpu->regs[i] = 0x0; /* Reset registers */
+    machine->cpu->ivt = 0x0; /* Empty interrupt vector register */
+    machine->cpu->vmr = 0x0; /* No VM root */
 
     dbgPrintf("Allocating PMEM structure.\n");
     machine->mem = (struct pmem_t*)malloc(sizeof(struct pmem_t));
@@ -42,6 +49,7 @@ struct vm_t* initialize_machine()
         free(machine);
         return NULL;
     }
+    memset(machine->mem->memory, 0x0, MEMORY_SIZE);
 
     return machine;
 }
