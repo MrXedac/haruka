@@ -81,12 +81,24 @@ OPCODE(CALL)
 	INC_IP;
 }
 
-void panic(struct vm_t* vm)
+void regDump(struct vm_t* vm)
 {
 	for(int i = 0; i < 16; i++)
 	{
 		dbgPrintf("R%d: 0x%x\n", i, REG(i));
 	}
+}
+
+void panic(struct vm_t* vm)
+{
+    /* Dump CPU registers */
+    regDump(vm);
+
+    /* Shutdown machine properly */
+    shutdown_machine(vm);
+
+    /* Bye ! */
+    exit(-1);
 }
 
 /* CPU cycle main function */
@@ -95,6 +107,12 @@ void execute(struct vm_t* vm)
 	/* IP is in vm->cpu->regs[CPU_REGISTER_IP] */
 	while(1)
 	{
+        if(IP > MEMORY_SIZE)
+        {
+            dbgPrintf("Trying to execute code outside RAM or ROM at 0x%x.\n", IP);
+            panic(vm);
+            for(;;);
+        }
 		uint8_t opcode = MEM[IP];
 		if(opcode < IS_SIZE)
 			handlers[opcode](vm);
