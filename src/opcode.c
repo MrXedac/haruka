@@ -17,6 +17,8 @@ const opcode_handler handlers[IS_SIZE] = {
 	OP(DEC),
 	OP(JMP),
 	OP(CALL),
+    OP(ADD),
+    OP(SUB),
 };
 
 /* Do nothing and increment IP */
@@ -28,7 +30,7 @@ OPCODE(NOP)
 
 OPCODE(MOV)
 {
-	dbgPrintf("MOV opcode read\n");
+	// dbgPrintf("MOV opcode read\n");
 	uint32_t 	imm = 0x0;
 	uint32_t 	val = 0x0;
 
@@ -46,23 +48,44 @@ OPCODE(MOV)
 		/* OR value */
 		imm |= val;
 	}
-	dbgPrintf("Value %x put into r%d\n", imm, dst);
+	// dbgPrintf("Value %x put into r%d\n", imm, dst);
 	vm->cpu->regs[dst] = imm;
 	INC_IP;
 }
 
 OPCODE(INC)
 {
-	dbgPrintf("INC opcode read\n");
+	// dbgPrintf("INC opcode read\n");
 	INC_IP;
 	uint8_t dst = MEM[IP];
 	REG(dst)++;
 	INC_IP;
 }
 
+OPCODE(ADD)
+{
+    // dbgPrintf("ADD opcode read\n");
+    INC_IP;
+    uint8_t dst = MEM[IP];
+    INC_IP;
+    uint8_t src = MEM[IP];
+    REG(dst) += REG(src);
+    INC_IP;
+}
+
+OPCODE(SUB)
+{
+    INC_IP;
+    uint8_t dst = MEM[IP];
+    INC_IP;
+    uint8_t src = MEM[IP];
+    REG(dst) -= REG(src);
+    INC_IP;
+}
+
 OPCODE(DEC)
 {
-	dbgPrintf("DEC opcode read\n");
+	// dbgPrintf("DEC opcode read\n");
 	INC_IP;
 	uint8_t dst = MEM[IP];
 	REG(dst)--;
@@ -114,9 +137,9 @@ void execute(struct vm_t* vm)
             for(;;);
         }
 		uint8_t opcode = MEM[IP];
-		if(opcode < IS_SIZE)
+		if(opcode < IS_SIZE){
 			handlers[opcode](vm);
-		else {
+        }else {
 			dbgPrintf("Invalid opcode %x at IP %x\n", opcode, IP);
 			panic(vm);
 			for(;;);
