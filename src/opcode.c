@@ -7,6 +7,7 @@
 
 #define REG(x)	vm->cpu->regs[x]
 #define	IP	vm->cpu->regs[CPU_REGISTER_IP]
+#define SP  vm->cpu->regs[CPU_REGISTER_SP]
 #define MEM	vm->mem->memory
 #define	INC_IP 	vm->cpu->regs[CPU_REGISTER_IP]++
 
@@ -19,6 +20,9 @@ const opcode_handler handlers[IS_SIZE] = {
 	OP(CALL),
     OP(ADD),
     OP(SUB),
+    OP(PUSH),
+    OP(POP),
+    OP(PRT),
 };
 
 /* Do nothing and increment IP */
@@ -94,8 +98,22 @@ OPCODE(DEC)
 
 OPCODE(JMP)
 {
-	dbgPrintf("JMP - not impl\n");
-	INC_IP;
+	uint32_t 	adr = 0x0;
+    uint32_t    val = 0x0;
+    INC_IP;
+	
+	/* Get register value */
+	for(int i = 0; i < 4; i++)
+	{
+		val = (uint32_t)MEM[IP];
+		/* Shift 8 */
+		adr = adr << 8;
+		/* OR value */
+		adr |= val;
+        INC_IP;
+	}
+	dbgPrintf("Jump to %x\n", adr);
+	IP = adr;
 }
 
 OPCODE(CALL)
@@ -104,11 +122,67 @@ OPCODE(CALL)
 	INC_IP;
 }
 
+OPCODE(PUSH)
+{
+    uint32_t sp = SP;
+    uint32_t val = 0x0;
+    uint32_t imm = 0x0;
+
+    INC_IP;
+
+    for(int i = 0; i < 4; i++)
+    {
+        val = (uint32_t)MEM[IP];
+        imm = imm << 8;
+        imm |= val;
+        INC_IP;
+    }
+
+    /* Decrement stack */
+    SP -= sizeof(uint32_t);
+
+    // dbgPrintf("Pushing %x to stack %x\n", imm, SP);
+
+    ((uint32_t*)MEM)[SP] = imm;
+}
+
+OPCODE(POP)
+{
+    uint32_t sp = SP;
+    INC_IP;
+
+    uint8_t dst = MEM[IP];
+    INC_IP;
+
+    REG(dst) = ((uint32_t*)MEM)[SP];
+    // dbgPrintf("Pop %x into R%d\n", ((uint32_t*)MEM)[SP], dst);
+
+    /* Increment stack */
+    SP += sizeof(uint32_t);
+}
+
+OPCODE(PRT)
+{
+    INC_IP;
+    uint32_t addr = REG(MEM[IP]);
+    printf("%s", &(MEM[addr]));
+	INC_IP;
+}
+
 void regDump(struct vm_t* vm)
 {
 	for(int i = 0; i < 16; i++)
 	{
-		dbgPrintf("R%d: 0x%x\n", i, REG(i));
+		dbgPrintf("R%d%s: 0x%x\n",
+                i,
+                (i == CPU_REGISTER_IP || 
+                    i == CPU_REGISTER_SP ?
+                    (i == CPU_REGISTER_IP ?
+                     "(IP)":
+                     "(SP)")
+                    :
+                    ""),
+                REG(i));
 	}
 }
 

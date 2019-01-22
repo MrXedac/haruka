@@ -9,7 +9,7 @@
 
 struct vm_t* initialize_machine()
 {
-    dbgPrintf("Initializing machine with 0x%x memory size.\n", MEMORY_SIZE);
+    dbgPrintf("Initializing machine with 0x%x (%dMb) memory size.\n", MEMORY_SIZE, MEMORY_SIZE/(1024*1024));
     struct vm_t* machine = (struct vm_t*)malloc(sizeof(struct vm_t));
     if(!machine)
     {
