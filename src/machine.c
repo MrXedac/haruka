@@ -1,11 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include "machine.h"
 #include "cpu.h"
 #include "pmem.h"
 #include "debug.h"
+#include "vga.h"
 
 struct vm_t* initialize_machine()
 {
@@ -50,6 +52,7 @@ struct vm_t* initialize_machine()
         return NULL;
     }
     memset(machine->mem->memory, 0x0, MEMORY_SIZE);
+    machine->panic = false;
 
     return machine;
 }
@@ -61,5 +64,6 @@ void shutdown_machine(struct vm_t* machine)
     free(machine->mem->memory);
     free(machine->mem);
     free(machine);
+    haruka_close_vga();
     return;
 }

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 #include "debug.h"
 #include "opcode.h"
@@ -11,13 +12,18 @@
 #define MEM	vm->mem->memory
 #define	INC_IP 	vm->cpu->regs[CPU_REGISTER_IP]++
 
+/* Error management */
+enum vm_error { OUT_OF_BOUNDS_IP, INVALID_OPCODE };
+const char* vm_errors[] = {[OUT_OF_BOUNDS_IP] = "IP out of bounds", [INVALID_OPCODE] = "Invalid opcode"};
+int errno;
+
 const opcode_handler handlers[IS_SIZE] = {
-	OP(NOP),
-	OP(MOV),
-	OP(INC),
-	OP(DEC),
-	OP(JMP),
-	OP(CALL),
+    OP(NOP),
+    OP(MOV),
+    OP(INC),
+    OP(DEC),
+    OP(JMP),
+    OP(CALL),
     OP(ADD),
     OP(SUB),
     OP(PUSH),
@@ -28,42 +34,42 @@ const opcode_handler handlers[IS_SIZE] = {
 /* Do nothing and increment IP */
 OPCODE(NOP)
 {
-//	dbgPrintf("NOP opcode read at IP %x\n", IP);
-	INC_IP;
+    //	dbgPrintf("NOP opcode read at IP %x\n", IP);
+    INC_IP;
 }
 
 OPCODE(MOV)
 {
-	// dbgPrintf("MOV opcode read\n");
-	uint32_t 	imm = 0x0;
-	uint32_t 	val = 0x0;
+    // dbgPrintf("MOV opcode read\n");
+    uint32_t 	imm = 0x0;
+    uint32_t 	val = 0x0;
 
-	/* Destination register */
-	INC_IP;
-	uint8_t dst = MEM[IP];
-	
-	/* Mov 4-word value into register */
-	for(int i = 0; i < 4; i++)
-	{
-		INC_IP;
-		val = (uint32_t)MEM[IP];
-		/* Shift 8 */
-		imm = imm << 8;
-		/* OR value */
-		imm |= val;
-	}
-	// dbgPrintf("Value %x put into r%d\n", imm, dst);
-	vm->cpu->regs[dst] = imm;
-	INC_IP;
+    /* Destination register */
+    INC_IP;
+    uint8_t dst = MEM[IP];
+
+    /* Mov 4-word value into register */
+    for(int i = 0; i < 4; i++)
+    {
+        INC_IP;
+        val = (uint32_t)MEM[IP];
+        /* Shift 8 */
+        imm = imm << 8;
+        /* OR value */
+        imm |= val;
+    }
+    // dbgPrintf("Value %x put into r%d\n", imm, dst);
+    vm->cpu->regs[dst] = imm;
+    INC_IP;
 }
 
 OPCODE(INC)
 {
-	// dbgPrintf("INC opcode read\n");
-	INC_IP;
-	uint8_t dst = MEM[IP];
-	REG(dst)++;
-	INC_IP;
+    // dbgPrintf("INC opcode read\n");
+    INC_IP;
+    uint8_t dst = MEM[IP];
+    REG(dst)++;
+    INC_IP;
 }
 
 OPCODE(ADD)
@@ -89,37 +95,37 @@ OPCODE(SUB)
 
 OPCODE(DEC)
 {
-	// dbgPrintf("DEC opcode read\n");
-	INC_IP;
-	uint8_t dst = MEM[IP];
-	REG(dst)--;
-	INC_IP;
+    // dbgPrintf("DEC opcode read\n");
+    INC_IP;
+    uint8_t dst = MEM[IP];
+    REG(dst)--;
+    INC_IP;
 }
 
 OPCODE(JMP)
 {
-	uint32_t 	adr = 0x0;
+    uint32_t 	adr = 0x0;
     uint32_t    val = 0x0;
     INC_IP;
-	
-	/* Get register value */
-	for(int i = 0; i < 4; i++)
-	{
-		val = (uint32_t)MEM[IP];
-		/* Shift 8 */
-		adr = adr << 8;
-		/* OR value */
-		adr |= val;
+
+    /* Get register value */
+    for(int i = 0; i < 4; i++)
+    {
+        val = (uint32_t)MEM[IP];
+        /* Shift 8 */
+        adr = adr << 8;
+        /* OR value */
+        adr |= val;
         INC_IP;
-	}
-	dbgPrintf("Jump to %x\n", adr);
-	IP = adr;
+    }
+    dbgPrintf("Jump to %x\n", adr);
+    IP = adr;
 }
 
 OPCODE(CALL)
 {
-	dbgPrintf("CALL - not impl\n");
-	INC_IP;
+    dbgPrintf("CALL - not impl\n");
+    INC_IP;
 }
 
 OPCODE(PUSH)
@@ -166,57 +172,66 @@ OPCODE(PRT)
     INC_IP;
     uint32_t addr = REG(MEM[IP]);
     printf("%s", &(MEM[addr]));
-	INC_IP;
+    INC_IP;
 }
 
 void regDump(struct vm_t* vm)
 {
-	for(int i = 0; i < 16; i++)
-	{
-		dbgPrintf("R%d%s: 0x%x\n",
+    for(int i = 0; i < 16; i++)
+    {
+        dbgPrintf("R%d%s: 0x%x\n",
                 i,
                 (i == CPU_REGISTER_IP || 
-                    i == CPU_REGISTER_SP ?
-                    (i == CPU_REGISTER_IP ?
-                     "(IP)":
-                     "(SP)")
-                    :
-                    ""),
+                 i == CPU_REGISTER_SP ?
+                 (i == CPU_REGISTER_IP ?
+                  "(IP)":
+                  "(SP)")
+                 :
+                 ""),
                 REG(i));
-	}
+    }
 }
 
 void panic(struct vm_t* vm)
 {
+    haruka_set_status("panic at IP 0x%x (%s) - press enter to exit", IP, vm_errors[errno]);
     /* Dump CPU registers */
     regDump(vm);
 
-    /* Shutdown machine properly */
-    shutdown_machine(vm);
+    /* Set panic flag */
+    vm->panic = true;
+}
 
-    /* Bye ! */
-    exit(-1);
+void step(struct vm_t* vm)
+{
+    /* Do nothing if VM panics */
+    if(vm->panic)
+        return;
+
+    if(IP > MEMORY_SIZE)
+    {
+        dbgPrintf("Trying to execute code outside RAM or ROM at 0x%x.\n", IP);
+        errno = OUT_OF_BOUNDS_IP;
+        panic(vm);
+        return;
+    }
+    uint8_t opcode = MEM[IP];
+    if(opcode < IS_SIZE){
+        handlers[opcode](vm);
+    }else {
+        dbgPrintf("Invalid opcode %x at IP %x\n", opcode, IP);
+        errno = INVALID_OPCODE;
+        panic(vm);
+        return;
+    }
 }
 
 /* CPU cycle main function */
 void execute(struct vm_t* vm)
 {
-	/* IP is in vm->cpu->regs[CPU_REGISTER_IP] */
-	while(1)
-	{
-        if(IP > MEMORY_SIZE)
-        {
-            dbgPrintf("Trying to execute code outside RAM or ROM at 0x%x.\n", IP);
-            panic(vm);
-            for(;;);
-        }
-		uint8_t opcode = MEM[IP];
-		if(opcode < IS_SIZE){
-			handlers[opcode](vm);
-        }else {
-			dbgPrintf("Invalid opcode %x at IP %x\n", opcode, IP);
-			panic(vm);
-			for(;;);
-		}
-	}
+    /* IP is in vm->cpu->regs[CPU_REGISTER_IP] */
+    while(1)
+    {
+        step(vm);
+    }
 }

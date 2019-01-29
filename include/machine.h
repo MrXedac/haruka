@@ -2,6 +2,7 @@
 #define __MACHINE__
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #include "cpu.h"
 #include "pmem.h"
@@ -10,6 +11,7 @@
 struct vm_t {
     struct cpu_t*   cpu;    /* CPU */
     struct pmem_t*  mem;    /* Physical memory */
+    bool panic;             /* Is panicked ? */
 };
 
 /* Machine-related methods */
