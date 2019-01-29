@@ -53,6 +53,7 @@ struct vm_t* initialize_machine()
     }
     memset(machine->mem->memory, 0x0, MEMORY_SIZE);
     machine->panic = false;
+    machine->vgamode = VGA_UNINITIALIZED;
 
     return machine;
 }

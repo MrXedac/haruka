@@ -12,8 +12,9 @@ CFLAGS=-c -Iinclude/
 
 # Comment this out on non-macOS compilation targets, but make sure SDL2 is still linked
 OSX_FRAMEWORK_PATH=/Library/Frameworks
-OSX_LDFLAGS=-L/usr/local/lib -lSDL2 -Wl,-framework,OpenGL -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lsimple2d
-OSX_CFLAGS=-I/usr/local/include/SDL2 -D_THREAD_SAFE
+OSX_LDFLAGS=-L/usr/local/Cellar/argp-standalone/1.3/lib/ -L/usr/local/lib -lSDL2 -Wl,-framework,OpenGL -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lsimple2d -largp
+OSX_CFLAGS=-I/usr/local/include/SDL2 -D_THREAD_SAFE -I/usr/local/Cellar/argp-standalone/1.3/include/
+
 
 ASFLAGS=-c -Iinclude/
 

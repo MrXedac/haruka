@@ -7,9 +7,16 @@
 #include "cpu.h"
 #include "pmem.h"
 
+extern char biosfile[64];
+
 void load_bios(struct vm_t* vm)
 {
-	FILE* bios = fopen(BIOS_FILE, "r");
+	FILE* bios = fopen(biosfile, "r");
+    if(!bios)
+    {
+        fprintf(stderr, "Couldn't open bios file '%s'.\n", biosfile);
+        exit(-1);
+    }
 	uint32_t offset = 0x0;
 
 	while(!feof(bios))

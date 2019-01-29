@@ -6,12 +6,14 @@
 
 #include "cpu.h"
 #include "pmem.h"
+#include "vga.h"
 
 /* Definition of the virtual machine architecture */
 struct vm_t {
     struct cpu_t*   cpu;    /* CPU */
     struct pmem_t*  mem;    /* Physical memory */
     bool panic;             /* Is panicked ? */
+    enum vga_mode vgamode;  /* VGA mode */
 };
 
 /* Machine-related methods */

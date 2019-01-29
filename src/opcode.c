@@ -118,7 +118,7 @@ OPCODE(JMP)
         adr |= val;
         INC_IP;
     }
-    dbgPrintf("Jump to %x\n", adr);
+//    dbgPrintf("Jump to %x\n", adr);
     IP = adr;
 }
 
@@ -194,6 +194,9 @@ void regDump(struct vm_t* vm)
 
 void panic(struct vm_t* vm)
 {
+    extern int debug;
+    debug = 1;
+
     haruka_set_status("panic at IP 0x%x (%s) - press enter to exit", IP, vm_errors[errno]);
     /* Dump CPU registers */
     regDump(vm);
@@ -210,7 +213,7 @@ void step(struct vm_t* vm)
 
     if(IP > MEMORY_SIZE)
     {
-        dbgPrintf("Trying to execute code outside RAM or ROM at 0x%x.\n", IP);
+        dbgPrintf("Trying to execute code out of memory boundaries at 0x%x.\n", IP);
         errno = OUT_OF_BOUNDS_IP;
         panic(vm);
         return;

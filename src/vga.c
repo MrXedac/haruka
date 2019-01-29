@@ -51,12 +51,14 @@ void vga_on_key(S2D_Event e) {
 void vga_print(char* str, int weight, int x, int y, float r, float g, float b, int align)
 {
     S2D_Text* txt = S2D_CreateText("data/terminus.ttf", str, weight);
-    if(!align) {
+    if(!align || align > 3) {
         txt->x = x;
     } else if (align == 1) {
         txt->x = 1;
-    } else {
+    } else if (align == 2) {
         txt->x = 639 - txt->width - 1;
+    } else if (align == 3) {
+        txt->x = (640/2) - 1 - ((txt->width/2) - 1);
     }
     txt->y = y;
     txt->color.r = r;
@@ -84,7 +86,7 @@ void vga_render_internal()
             639, 505, 1.0f, 1.0f, 1.0f, 1.0f);
 
     /* Header text */
-    vga_print("Haruka VM - Version 0.1", 18, 0, 1, 0.0f, 0.0f, 0.0f, 2);
+    vga_print("Haruka VM - WiP", 18, 0, 1, 0.0f, 0.0f, 0.0f, 2);
     if(vm->panic)
         vga_print("Stopped", 18, 1, 1, 0.0f, 0.0f, 0.0f, 1);
     else
@@ -93,13 +95,16 @@ void vga_render_internal()
     /* Footer text */
     vga_print(status, 14, 1, 506, 0.0f, 0.0f, 0.0f, 0);
 
+    /* Is VGA initialized ? */
+    if(vm->vgamode == VGA_UNINITIALIZED)
+        vga_print("Guest has not initialized display yet", 14, 0, 200, 1.0f, 1.0f, 1.0f, 3);
 }
 
 
 /* Initializes the VGA output for Haruka VM */
 void haruka_init_vga()
 {
-    haruka_set_status("Haruka VGA initialized, %d opcodes per sec", OPCODE_PER_SEC);
+    haruka_set_status("Haruka VGA output successfully initialized");
     haruka_vga = S2D_CreateWindow(
             "Haruka VGA Output", 640, 520, vga_update_internal, vga_render_internal, 0
             );
