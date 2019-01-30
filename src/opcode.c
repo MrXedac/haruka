@@ -3,8 +3,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "bios.h"
 #include "debug.h"
 #include "opcode.h"
+#include "pthread.h"
 
 #define REG(x)	vm->cpu->regs[x]
 #define	IP	vm->cpu->regs[CPU_REGISTER_IP]
@@ -13,9 +15,42 @@
 #define	INC_IP 	vm->cpu->regs[CPU_REGISTER_IP]++
 
 /* Error management */
-enum vm_error { OUT_OF_BOUNDS_IP, INVALID_OPCODE };
-const char* vm_errors[] = {[OUT_OF_BOUNDS_IP] = "IP out of bounds", [INVALID_OPCODE] = "Invalid opcode"};
+enum vm_error { OUT_OF_BOUNDS_IP, INVALID_OPCODE, DATA_ABORT };
+const char* vm_errors[] = {[OUT_OF_BOUNDS_IP] = "IP out of bounds", [INVALID_OPCODE] = "Invalid opcode", [DATA_ABORT] = "Data abort"};
 int errno;
+extern char status[128];
+
+void regDump(struct vm_t* vm)
+{
+    for(int i = 0; i < 16; i++)
+    {
+        dbgPrintf("R%d%s: 0x%x\n",
+                i,
+                (i == CPU_REGISTER_IP || 
+                 i == CPU_REGISTER_SP ?
+                 (i == CPU_REGISTER_IP ?
+                  "(IP)":
+                  "(SP)")
+                 :
+                 ""),
+                REG(i));
+    }
+}
+
+void panic(struct vm_t* vm)
+{
+    extern int debug;
+    debug = 1;
+
+    haruka_set_status("panic at IP 0x%x (%s) - press enter to exit", IP, vm_errors[errno]);
+    /* Dump CPU registers */
+    regDump(vm);
+
+    /* Set panic flag */
+    vm->panic = true;
+
+    pthread_exit(0);
+}
 
 const opcode_handler handlers[IS_SIZE] = {
     OP(NOP),
@@ -29,6 +64,8 @@ const opcode_handler handlers[IS_SIZE] = {
     OP(PUSH),
     OP(POP),
     OP(PRT),
+    OP(STOP),
+    OP(MOVM),
 };
 
 /* Do nothing and increment IP */
@@ -61,6 +98,38 @@ OPCODE(MOV)
     // dbgPrintf("Value %x put into r%d\n", imm, dst);
     vm->cpu->regs[dst] = imm;
     INC_IP;
+}
+
+OPCODE(MOVM)
+{
+    // dbgPrintf("MOV opcode read\n");
+    uint32_t 	imm = 0x0;
+    uint32_t 	val = 0x0;
+
+    /* Destination register */
+    INC_IP;
+    uint8_t dst = MEM[IP];
+    uint32_t dstm = vm->cpu->regs[dst];
+
+    /* Mov 4-word value into register */
+    for(int i = 0; i < 4; i++)
+    {
+        INC_IP;
+        val = (uint32_t)MEM[IP];
+        /* Shift 8 */
+        imm = imm << 8;
+        /* OR value */
+        imm |= val;
+    }
+    // dbgPrintf("Value %x put into r%d\n", imm, dst);
+    if(dstm >= MEMORY_SIZE)
+    {
+        dbgPrintf("Trying to write at an out-of-bounds location 0x%x\n", dstm);
+        errno = DATA_ABORT;
+        panic(vm);
+    } else MEM[dstm] = imm;
+    INC_IP;
+
 }
 
 OPCODE(INC)
@@ -118,7 +187,7 @@ OPCODE(JMP)
         adr |= val;
         INC_IP;
     }
-//    dbgPrintf("Jump to %x\n", adr);
+    //    dbgPrintf("Jump to %x\n", adr);
     IP = adr;
 }
 
@@ -175,40 +244,17 @@ OPCODE(PRT)
     INC_IP;
 }
 
-void regDump(struct vm_t* vm)
+OPCODE(STOP)
 {
-    for(int i = 0; i < 16; i++)
-    {
-        dbgPrintf("R%d%s: 0x%x\n",
-                i,
-                (i == CPU_REGISTER_IP || 
-                 i == CPU_REGISTER_SP ?
-                 (i == CPU_REGISTER_IP ?
-                  "(IP)":
-                  "(SP)")
-                 :
-                 ""),
-                REG(i));
-    }
-}
-
-void panic(struct vm_t* vm)
-{
-    extern int debug;
-    debug = 1;
-
-    haruka_set_status("panic at IP 0x%x (%s) - press enter to exit", IP, vm_errors[errno]);
-    /* Dump CPU registers */
-    regDump(vm);
-
-    /* Set panic flag */
-    vm->panic = true;
+    INC_IP;
+    vm->stopped = true;
+    haruka_set_status("encountered STOP opcode at IP 0x%x, vm halted peacefully", IP);
 }
 
 void step(struct vm_t* vm)
 {
     /* Do nothing if VM panics */
-    if(vm->panic)
+    if(vm->panic || vm->stopped)
         return;
 
     if(IP > MEMORY_SIZE)
@@ -230,11 +276,25 @@ void step(struct vm_t* vm)
 }
 
 /* CPU cycle main function */
-void execute(struct vm_t* vm)
+void* execute(void* vmx)
 {
-    /* IP is in vm->cpu->regs[CPU_REGISTER_IP] */
-    while(1)
+    struct vm_t* vmt = (struct vm_t*)vmx;
+    vmt = initialize_machine();
+    if(vmt) 
     {
-        step(vm);
+        load_bios(vmt);
+        extern bool initialized;
+        initialized = true;
+        extern struct vm_t* vm;
+        vm = vmt;
+
+        haruka_set_status("VM successfully initialized");
+        /* IP is in vm->cpu->regs[CPU_REGISTER_IP] */
+        while(1)
+        {
+            step(vmt);
+        }
+
     }
+    return NULL;
 }

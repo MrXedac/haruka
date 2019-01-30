@@ -13,6 +13,7 @@ struct vm_t {
     struct cpu_t*   cpu;    /* CPU */
     struct pmem_t*  mem;    /* Physical memory */
     bool panic;             /* Is panicked ? */
+    bool stopped;           /* Is stopped ? */
     enum vga_mode vgamode;  /* VGA mode */
 };
 

@@ -6,6 +6,7 @@
 #include "machine.h"
 #include "cpu.h"
 #include "pmem.h"
+#include "debug.h"
 
 extern char biosfile[64];
 
@@ -27,7 +28,7 @@ void load_bios(struct vm_t* vm)
 	}
 	
 	vm->mem->memory[offset - 1] = 0x0;
-
+    dbgPrintf("BIOS loaded successfully\n");
 	/* BIOS loaded - close file */
 	fclose(bios);
 }

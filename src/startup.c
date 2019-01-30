@@ -5,6 +5,7 @@
 #include <getopt.h>
 #include <string.h>
 #include <argp.h>
+#include <pthread.h>
 
 #include "debug.h"
 #include "machine.h"
@@ -38,6 +39,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
 
 static struct argp argp = { options, parse_opt, args_doc, doc };
 
+static pthread_t vm_thread;
+bool initialized = false;
+
 int main(int argc, char** argv)
 {
     int c;
@@ -45,17 +49,12 @@ int main(int argc, char** argv)
     /* Parse arguments */
     argp_parse (&argp, argc, argv, 0, 0, 0);
 
-    vm = initialize_machine();
-    if(vm)
-    {
-        dbgPrintf("VM initialized successfully.\n");
-        load_bios(vm);
-        haruka_init_vga();
-        /* execute(vm); */
-        shutdown_machine(vm);
-        return 0;
-    } else {
-        dbgPrintf("Couldn't initialize VM properly. Exiting.\n");
-        return 0;
-    }
+    /* Create execution thread */
+    int ret = pthread_create(&vm_thread, NULL, execute, NULL);
+    
+    /* Execute VM */
+    haruka_init_vga();
+
+    shutdown_machine(vm);
+    return 0;
 }

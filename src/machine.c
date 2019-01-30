@@ -52,8 +52,16 @@ struct vm_t* initialize_machine()
         return NULL;
     }
     memset(machine->mem->memory, 0x0, MEMORY_SIZE);
+
+    for(unsigned char* vga = (machine->mem->memory + VGA_LFB_BASE); vga < (machine->mem->memory + VGA_LFB_BASE + VGA_LFB_SIZE); vga=vga+4){
+        *vga=0x66;
+        *(vga+1)=0x99;
+        *(vga+2)=0xFF;
+        *(vga+3)=0xFF;
+    }
+
     machine->panic = false;
-    machine->vgamode = VGA_UNINITIALIZED;
+    machine->vgamode = VGA_640_480_32;
 
     return machine;
 }
