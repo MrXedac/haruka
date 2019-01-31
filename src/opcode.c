@@ -68,6 +68,8 @@ const opcode_handler handlers[IS_SIZE] = {
     OP(MOVM),
     OP(CMP),
     OP(JEQ),
+    OP(MOVR),
+    OP(MOVMR),
 };
 
 /* Do nothing and increment IP */
@@ -129,7 +131,12 @@ OPCODE(MOVM)
         dbgPrintf("Trying to write at an out-of-bounds location 0x%x\n", dstm);
         errno = DATA_ABORT;
         panic(vm);
-    } else MEM[dstm] = imm;
+    } else {
+        MEM[dstm] = (imm >> 24) & 0xFF;
+        MEM[dstm+1] = (imm >> 16) & 0xFF;
+        MEM[dstm+2] = (imm >> 8) & 0xFF;
+        MEM[dstm+3] = (imm) & 0xFF;
+    }
     INC_IP;
 
 }
@@ -151,6 +158,41 @@ OPCODE(ADD)
     INC_IP;
     uint8_t src = MEM[IP];
     REG(dst) += REG(src);
+    INC_IP;
+}
+
+OPCODE(MOVR)
+{
+    // dbgPrintf("ADD opcode read\n");
+    INC_IP;
+    uint8_t dst = MEM[IP];
+    INC_IP;
+    uint8_t src = MEM[IP];
+    REG(dst) = REG(src);
+    INC_IP;
+}
+
+OPCODE(MOVMR)
+{
+    // dbgPrintf("ADD opcode read\n");
+    INC_IP;
+    uint8_t dst = MEM[IP];
+    uint32_t dstm = vm->cpu->regs[dst];
+    INC_IP;
+    uint8_t src = MEM[IP];
+    uint32_t val = vm->cpu->regs[src];
+
+    if(dstm >= MEMORY_SIZE)
+    {
+        dbgPrintf("Trying to write at an out-of-bounds location 0x%x\n", dstm);
+        errno = DATA_ABORT;
+        panic(vm);
+    } else {
+        MEM[dstm] = (val >> 24) & 0xFF;
+        MEM[dstm+1] = (val >> 16) & 0xFF;
+        MEM[dstm+2] = (val >> 8) & 0xFF;
+        MEM[dstm+3] = (val) & 0xFF;
+    }
     INC_IP;
 }
 

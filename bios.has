@@ -1,3 +1,35 @@
+; First setup data segment
+.dataat 0x4000
+
+;; Banner intro
+.string banner1 "Haruka BIOS 0.1\n"
+.string banner2 "Under development.\n"
+.string linebreak "\n"
+
+;; Basic regop
+.string regop1 "-> Performing basic register operation.\n"
+
+;; Mov stuff
+.string mov1 "-> Performing some MOVs.\n"
+
+;; Stack stuff
+.string stack1 "-> Performing some stack stuff as well.\n"
+
+;; End !
+.string complete "Complete. Now crashing for some register dumps!\n\nBye bye...\n\n"
+
+;; Endless loop string
+.string loop "Now halting.\n"
+
+; Basic register operation
+MOV R5 banner1
+PRT R5
+MOV R5 banner2
+PRT R5
+MOV R5 linebreak
+PRT R5
+MOV R5 regop1
+PRT R5
 INC R0
 INC R1
 INC R2
@@ -6,6 +38,10 @@ NOP
 INC R2
 DEC R2
 NOP
+
+; Some MOV stuff
+MOV R5 mov1
+PRT R5
 MOV R6 0xDEADCAFE
 MOV R8 0xBEEFCAFE
 MOV R9 0x4000
@@ -13,3 +49,61 @@ MOV R10 0x1000
 ADD R9 R10
 MOV R11 0x6000
 SUB R11 R9
+MOV R15 0x1000
+
+; Stack stuff
+MOV R5 stack1
+PRT R5
+PUSH 0xBABABABA
+PUSH 0xBEEFCACA
+POP R7
+
+; Jump for crash
+MOV R5 complete
+PRT R5
+MOV R5 loop
+PRT R5
+
+; Blit pixel - VGA test !
+; R5 -> Beginning address
+; R6 -> Bytes per pixel
+; R7 -> End address
+; R8 -> Base color (blue).
+; VGA framebuffer : 0xC00000 to 0xD2C000
+MOV R5 0x0C00000
+MOV R6 0x4
+MOV R7 0x0D2C000
+MOV R8 0x0002FF00
+MOV R9 0x00000100
+
+; We will iterate 480/0x1E0 times (process each line), and 640/0x280 times (each pixel per line)
+; Each line, we will change slightly the color of the pixel (in order to make a beautiful gradient)
+MOV R2 0x280
+MOV R3 0x0
+
+; Loop function to fill the screen 
+.label theloop
+MOVMR R5 R8
+ADD R5 R6 
+INC R3
+
+; Have we finished painting the row ?
+CMP R2 R3
+JEQ update_color
+
+.label resume_loop
+; Have we finished painting the whole screen ?
+CMP R5 R7
+JEQ halt
+
+; Repeat until we're done
+JMP theloop
+
+.label update_color
+; Decrement color, reset R3 counter, return to the loop
+SUB R8 R9
+MOV R3 0x0
+JMP resume_loop
+
+.label halt
+STOP
