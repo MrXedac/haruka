@@ -8,6 +8,13 @@
 #include "pmem.h"
 #include "vga.h"
 
+#define FLAGS_CMP_EQ    0x00000001
+#define FLAGS_CMP_GT    0x00000002
+#define FLAGS_CMP_LT    0x00000004
+
+#define FLAG_SET(v, f)      (v->flags |= f)
+#define FLAG_CLEAR(v, f)    (v->flags &= ~f)
+
 /* Definition of the virtual machine architecture */
 struct vm_t {
     struct cpu_t*   cpu;    /* CPU */
@@ -15,6 +22,7 @@ struct vm_t {
     bool panic;             /* Is panicked ? */
     bool stopped;           /* Is stopped ? */
     enum vga_mode vgamode;  /* VGA mode */
+    uint32_t flags;         /* CPU flags */
 };
 
 /* Machine-related methods */

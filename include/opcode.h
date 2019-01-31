@@ -13,7 +13,7 @@ struct instr_t {
     uint32_t parameters[5];     /* Up to 5 parameters per opcode */
 };
 
-#define IS_SIZE         13       /* Instruction set size */
+#define IS_SIZE         15       /* Instruction set size */
 
 #define OPCODE(x)	void handle_##x(struct vm_t *vm)
 #define OP(x)		handle_##x
@@ -31,6 +31,8 @@ struct instr_t {
 #define OPCODE_PRT      0x0A
 #define OPCODE_STOP     0x0B
 #define OPCODE_MOVM     0x0C
+#define OPCODE_CMP      0x0D
+#define OPCODE_JEQ      0x0E
 
 OPCODE(NOP);
 OPCODE(MOV);
@@ -45,6 +47,8 @@ OPCODE(POP);
 OPCODE(PRT);
 OPCODE(STOP);
 OPCODE(MOVM);
+OPCODE(CMP);
+OPCODE(JEQ);
 
 typedef void (*opcode_handler)(struct vm_t *vm);
 

@@ -66,6 +66,8 @@ const opcode_handler handlers[IS_SIZE] = {
     OP(PRT),
     OP(STOP),
     OP(MOVM),
+    OP(CMP),
+    OP(JEQ),
 };
 
 /* Do nothing and increment IP */
@@ -152,6 +154,31 @@ OPCODE(ADD)
     INC_IP;
 }
 
+OPCODE(CMP)
+{
+    // dbgPrintf("ADD opcode read\n");
+    INC_IP;
+    uint8_t dst = MEM[IP];
+    INC_IP;
+    uint8_t src = MEM[IP];
+    
+    /* Reset flags */
+    FLAG_CLEAR(vm, FLAGS_CMP_EQ);
+    FLAG_CLEAR(vm, FLAGS_CMP_LT);
+    FLAG_CLEAR(vm, FLAGS_CMP_GT);
+
+    /* Set flags */
+    if(REG(dst) == REG(src))
+    {
+        FLAG_SET(vm, FLAGS_CMP_EQ);
+    } else if (REG(dst) > REG(src)) {
+        FLAG_SET(vm, FLAGS_CMP_GT);
+    } else {
+        FLAG_SET(vm, FLAGS_CMP_LT);
+    }
+    INC_IP;
+}
+
 OPCODE(SUB)
 {
     INC_IP;
@@ -169,6 +196,32 @@ OPCODE(DEC)
     uint8_t dst = MEM[IP];
     REG(dst)--;
     INC_IP;
+}
+
+OPCODE(JEQ)
+{
+    uint32_t 	adr = 0x0;
+    uint32_t    val = 0x0;
+    INC_IP;
+
+    /* Get register value */
+    for(int i = 0; i < 4; i++)
+    {
+        val = (uint32_t)MEM[IP];
+        /* Shift 8 */
+        adr = adr << 8;
+        /* OR value */
+        adr |= val;
+        INC_IP;
+    }
+    //    dbgPrintf("Jump to %x\n", adr);
+    if(vm->flags & FLAGS_CMP_EQ) {
+//        dbgPrintf("JEQ fullfilled\n");
+        IP = adr;
+    } else { 
+//        dbgPrintf("JEQ not fullfilled, not jumping to %x\n", adr);
+//        dbgPrintf("IP now %x\n", IP);
+    }
 }
 
 OPCODE(JMP)
