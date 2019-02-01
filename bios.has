@@ -106,4 +106,13 @@ MOV R3 0x0
 JMP resume_loop
 
 .label halt
+CALL print_vga_info
 STOP
+
+; Function 'print_vga_info'
+.label print_vga_info
+.string vga_info_line_1 "VGA test successfully concluded! A nice gradient should appear on the VGA output.\n"
+
+MOV R5 vga_info_line_1
+PRT R5
+RET

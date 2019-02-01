@@ -70,6 +70,7 @@ const opcode_handler handlers[IS_SIZE] = {
     OP(JEQ),
     OP(MOVR),
     OP(MOVMR),
+    OP(RET),
 };
 
 /* Do nothing and increment IP */
@@ -77,6 +78,13 @@ OPCODE(NOP)
 {
     //	dbgPrintf("NOP opcode read at IP %x\n", IP);
     INC_IP;
+}
+
+OPCODE(RET)
+{
+    /* Gets return address from stack and pops */
+    IP = ((uint32_t*)MEM)[SP];
+    SP += sizeof(uint32_t);
 }
 
 OPCODE(MOV)
@@ -288,8 +296,25 @@ OPCODE(JMP)
 
 OPCODE(CALL)
 {
-    dbgPrintf("CALL - not impl\n");
+    /* Puts return address in stack */
+    SP -= sizeof(uint32_t);
+    ((uint32_t*)MEM)[SP] = IP + 5; /* Next instruction is at IP + opcode(call) + addr(call) */
+
+    uint32_t 	adr = 0x0;
+    uint32_t    val = 0x0;
     INC_IP;
+
+    /* Get register value */
+    for(int i = 0; i < 4; i++)
+    {
+        val = (uint32_t)MEM[IP];
+        /* Shift 8 */
+        adr = adr << 8;
+        /* OR value */
+        adr |= val;
+        INC_IP;
+    }
+    IP = adr;
 }
 
 OPCODE(PUSH)
